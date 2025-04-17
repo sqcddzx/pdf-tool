@@ -1,0 +1,108 @@
+﻿html{
+  background: #292929;
+}
+
+/* 清空默认样式 */
+html, body, div, span, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strong, sub, sup, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video, input {
+  margin: 0;
+  padding: 0;
+}
+
+ol, ul {
+  list-style: none;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+input, button, textarea {
+  outline: none;
+}
+
+body, input, button {
+  font-family: Consolas,"Microsoft YaHei","Lantinghei SC","Hiragino Sans GB","WenQuanYi Micro Hei",sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 清空默认样式 end */
+
+/* mini滚动条 */
+.mini-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.mini-scroll::-webkit-scrollbar-button{
+  display: none;
+}
+.mini-scroll::-webkit-scrollbar-track{
+  background:#404040;
+}
+.mini-scroll::-webkit-scrollbar-track-piece{
+  background: #404040;
+  /* box-shadow: inset 1px 1px 5px #ddd; */
+}
+.mini-scroll::-webkit-scrollbar-thumb{
+  background: #353535;
+  /* border: solid 2px #333; */
+  /* border-image: linear-gradient(90deg, #ddd,#fff) 20; */
+  border-radius: 10px;
+}
+.mini-scroll::-webkit-scrollbar-corner{
+  background:#fff;
+}
+.mini-scroll::-webkit-scrollbar-resizer{
+  background:#fff;
+}
+/* mini滚动条 end */
+
+
+.jumpIn-enter-active,.jumpIn-leave-active{
+  transition-property: transform, opacity;
+  transition-duration: .2s;
+}
+.jumpIn-enter,.jumpIn-leave-to{
+  /* transform: perspective(1000px) translateZ(-100px) rotateY(10deg) rotateX(-15deg); */
+  opacity: 0;
+}
+.jumpIn-enter-to,.jumpIn-leave{
+  opacity: 1;
+  /* transform: perspective(1000px) translateZ(0px) rotateY(0deg) rotateX(0deg); */
+}
+
+.fadeIn-enter-active,.fadeIn-leave-active{
+  transition-property: opacity;
+  transition-duration: .2s;
+}
+.fadeIn-enter,.fadeIn-leave-to{
+  opacity: 0;
+}
+.fadeIn-enter-to,.fadeIn-leave{
+  opacity: 1;
+}
+
+.addFadeIn-enter-active,.addFadeIn-leave-active{
+  transition-property: top, opacity;
+  transition-duration: .2s;
+  transition-timing-function: linear;
+}
+.addFadeIn-enter,.addFadeIn-leave-to{
+  top: -10px;
+  opacity: 0;
+}
+.addFadeIn-enter-to,.addFadeIn-leave{
+  opacity: 1;
+  top: 0;
+}
+
+.flicker{
+  animation: flicker 2s linear infinite;
+}
+
+@keyframes flicker {
+  50% {
+    opacity: 0;
+  }
+}
