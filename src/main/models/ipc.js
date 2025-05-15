@@ -3,6 +3,7 @@ import path from 'path'
 import { app, ipcMain, dialog, shell } from 'electron'
 import { getConfig, saveConfig } from './config'
 import { addWatermark } from './watermark'
+import crypto from 'crypto'
 
 let userDataPath = app.getPath('userData')
 let watermarkDir = `${userDataPath}/watermark/`
@@ -17,27 +18,32 @@ export const ipcSetup = (win) => {
     if (!fs.existsSync(watermarkDir)) {
       fs.mkdirSync(watermarkDir, { recursive: true });
     }
-    
-    // 生成新的文件名
-    const fileName = path.basename(file.path);
-    const newPath = path.join(watermarkDir, fileName);
+
+    const fileName = file.name
+    // 生成随机 MD5 哈希值
+    const randomString = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const md5Hash = crypto.createHash('md5').update(randomString).digest('hex');
+    // 获取文件扩展名
+    const extname = path.extname(file.path);
+    // 使用随机 MD5 哈希值作为文件名
+    const newFileName = `${md5Hash}${extname}`;
+    const newPath = path.join(watermarkDir, newFileName);
     
     // 复制文件到watermark目录
     fs.copyFileSync(file.path, newPath);
     
     // 更新配置文件
     const config = getConfig(userConfigPath);
-    config.watermark.push({
+    const info = {
+      md5: md5Hash,
       name: fileName,
       path: newPath
-    })
+    }
+    config.watermark.push(info)
     saveConfig(userConfigPath, config);
     
     // 发送成功消息回渲染进程
-    win.webContents.send('watermark-upload-success', {
-      name: fileName,
-      path: newPath
-    });
+    win.webContents.send('watermark-upload-success', info);
   });
 
   //删除水印
@@ -48,8 +54,8 @@ export const ipcSetup = (win) => {
     const config = getConfig(userConfigPath);
     
     // 从配置中移除该水印
-    const newConfig = config.watermark.filter(item => item.path !== watermarkPath);
-    saveConfig(userConfigPath, newConfig);
+    config.watermark = config.watermark.filter(item => item.path !== watermarkPath);
+    saveConfig(userConfigPath, config);
     
     // 删除实际的水印文件
     if (fs.existsSync(watermarkPath)) {
@@ -91,7 +97,8 @@ export const ipcSetup = (win) => {
 
   //保存配置
   ipcMain.on('save-config', (e, data) => {
-    saveConfig(userConfigPath, data)
+    let res = getConfig(userConfigPath)
+    saveConfig(userConfigPath, {...res, ...data})
   });
 
   //选择文件夹

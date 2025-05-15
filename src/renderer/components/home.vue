@@ -15,14 +15,14 @@
         </div>
 
         <div class="watermark-list">
-          <div v-for="(watermark, index) in watermarks" :key="index" class="watermark-item"
-            :class="{ active: selectedWatermark === index }" @click="selectWatermark(index)">
+          <div v-for="(item, index) in watermarks" :key="index" class="watermark-item"
+            :class="{ active: activeMd5 === item.md5 }" @click="selectWatermark(item.md5)">
             <!-- <div class="watermark-preview">
               <img :src="watermark.preview" alt="水印预览">
             </div> -->
             <div class="watermark-info">
-              <div class="watermark-name">{{ watermark.name }}</div>
-              <button class="delete-btn" @click.stop="deleteWatermark(index)">
+              <div class="watermark-name">{{ item.name }}</div>
+              <button class="delete-btn" @click.stop="deleteWatermark(item.md5)">
                 删除
               </button>
             </div>
@@ -80,7 +80,7 @@ export default {
       isDragging: false,
       files: [],
       watermarks: [],
-      selectedWatermark: null,
+      activeMd5: null,
       outputFolder: ''
     }
   },
@@ -111,29 +111,23 @@ export default {
       // 清空input的值，允许重复选择同一个文件
       e.target.value = '';
     },
-    deleteWatermark(index) {
+    deleteWatermark(md5) {
       MessageBox.confirm('确定要删除这个水印文件吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        let watermark = this.watermarks[index]
+        let watermark = this.watermarks.find(item => item.md5 === md5);
         ipcRenderer.send('delete-watermark', watermark);
-        ipcRenderer.on('watermark-delete-success', (event, data) => {
-          this.watermarks.splice(index, 1);
-          if (this.selectedWatermark === index) {
-            this.selectedWatermark = null;
-          }
-        });
       }).catch(() => {
         // 用户点击取消，不做任何操作
       });
     },
-    selectWatermark(index) {
-      this.selectedWatermark = index;
+    selectWatermark(md5) {
+      this.activeMd5 = md5;
     },
     handleDrop(e) {
-      if (this.selectedWatermark === null) {
+      if (this.activeMd5 === null) {
         Message.warning('请先选择水印文件');
         return;
       }
@@ -149,7 +143,7 @@ export default {
 
       ipcRenderer.send("add-watermark", {
         files: newFiles,
-        watermark: this.watermarks[this.selectedWatermark]
+        watermark: this.watermarks.find(item => item.md5 === this.activeMd5)
       });
     },
     getStatusText(status) {
@@ -175,6 +169,7 @@ export default {
     }
   },
   mounted() {
+    let that = this
     // 获取已保存的水印文件
     ipcRenderer.send('get-config');
     ipcRenderer.on('get-config', (event, res) => {
@@ -215,6 +210,7 @@ export default {
       const reader = new FileReader();
       reader.onload = (e) => {
         this.watermarks.push({
+          md5: data.md5,
           name: data.name,
           path: data.path,
           preview: e.target.result
@@ -226,16 +222,25 @@ export default {
         .then(blob => reader.readAsDataURL(blob));
     });
 
+    // 监听水印删除事件
+    ipcRenderer.on('watermark-delete-success', (event, data) => {
+      this.watermarks = this.watermarks.filter(item => item.path !== data.path)
+      if (this.activeMd5 === data.md5) {
+        this.activeMd5 = null;
+      }
+    });
+
     ipcRenderer.on('file-status-update', (event, { id, status, msg }) => {
-      const fileIndex = this.files.findIndex(f => f.id === id);
+      const fileIndex = that.files.findIndex(f => f.id === id);
       if (fileIndex !== -1) {
-        this.$set(this.files, fileIndex, { ...this.files[fileIndex], status, msg });
+        that.$set(that.files, fileIndex, { ...that.files[fileIndex], status, msg });
       }
     });
   },
   beforeDestroy() {
     ipcRenderer.removeAllListeners('get-config');
     ipcRenderer.removeAllListeners('watermark-upload-success');
+    ipcRenderer.removeAllListeners('watermark-delete-success');
     ipcRenderer.removeAllListeners('file-status-update');
   }
 };
@@ -497,7 +502,7 @@ export default {
         .file-actions {
           margin-left: 15px;
           flex-shrink: 0;
-          
+
           .open-folder-btn {
             background: none;
             border: 1px solid #409EFF;
