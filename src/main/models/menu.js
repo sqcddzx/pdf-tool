@@ -5,6 +5,12 @@ let menu = null
 export const menuSetup = (win) => {
   menu = Menu.buildFromTemplate([
     {
+      label: '首页',
+      click: () => {
+        win.webContents.send('set-pannel', { pannel: 'home' });
+      }
+    },
+    {
       label: '配置',
       submenu: [
         {
