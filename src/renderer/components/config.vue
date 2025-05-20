@@ -8,6 +8,11 @@
               <el-button slot="append" @click="selectFolder">选择目录</el-button>
             </el-input>
           </el-form-item>
+          <!-- 添加并发量配置项，并绑定 change 事件 -->
+          <el-form-item label="并发量">
+            <el-input-number v-model="form.concurrency"  :min="1"  :max="100"  label="并发量" @change="changeConcurrency()"
+            ></el-input-number>
+          </el-form-item>
         </el-form>
       </div>
     </popup>
@@ -23,7 +28,9 @@ export default {
     return {
       showPannel: false,
       form: {
-        outputFolder: ''
+        outputFolder: '',
+        // 初始化并发量，默认值设为 1
+        concurrency: 1 
       }
     }
   },
@@ -41,11 +48,16 @@ export default {
       ipcRenderer.once('save-dialog-result', (event, result) => {
         if (result) {
           this.form.outputFolder = result[0];
-          // 保存配置
+          
           ipcRenderer.send('save-config', {
             outputFolder: this.form.outputFolder
           });
         }
+      });
+    },
+    changeConcurrency() {
+      ipcRenderer.send('save-config', {
+        concurrency: this.form.concurrency
       });
     }
   },
@@ -58,8 +70,14 @@ export default {
     // 获取已保存的配置
     ipcRenderer.send('get-config');
     ipcRenderer.on('get-config', (event, res) => {
-      if (res && res.outputFolder) {
-        this.form.outputFolder = res.outputFolder;
+      if (res) {
+        if (res.outputFolder) {
+          this.form.outputFolder = res.outputFolder;
+        }
+        // 获取并发量配置
+        if (res.concurrency) {
+          this.form.concurrency = res.concurrency;
+        }
       }
     });
   },
@@ -81,4 +99,4 @@ export default {
 .content {
   padding: 20px;
 }
-</style> 
+</style>

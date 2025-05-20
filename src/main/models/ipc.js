@@ -14,13 +14,14 @@ export const ipcSetup = (win) => {
   // pdf转jpg
   // 定义一个任务队列
   let pdfJpgTaskQueue = [];
-  let isProcessing = false;
+  let processingCount = 0;
+  let MAX_CONCURRENT_TASKS = 1;
 
   // 处理队列中的任务
   async function processTaskQueue() {
-    if (isProcessing || pdfJpgTaskQueue.length === 0) return;
+    if (processingCount >= MAX_CONCURRENT_TASKS || pdfJpgTaskQueue.length === 0) return;
 
-    isProcessing = true;
+    processingCount++;
     const file = pdfJpgTaskQueue.shift();
     const config = getConfig(userConfigPath);
 
@@ -60,14 +61,17 @@ export const ipcSetup = (win) => {
       win.webContents.send('file-status-update', { id: file.id, status: 'error', msg: err.message });
     }
 
-    isProcessing = false;
+    processingCount--;
     processTaskQueue();
   }
 
   ipcMain.on('pdf-jpg', (e, data) => {
     pdfJpgTaskQueue = pdfJpgTaskQueue.concat(data.files);
-
-    processTaskQueue();
+    
+    // 启动多个处理任务，直到达到最大并发数
+    while (processingCount < MAX_CONCURRENT_TASKS && pdfJpgTaskQueue.length > 0) {
+      processTaskQueue();
+    }
   });
 
   //上传水印
@@ -158,6 +162,13 @@ export const ipcSetup = (win) => {
   //保存配置
   ipcMain.on('save-config', (e, data) => {
     let res = getConfig(userConfigPath)
+    
+    if(res.concurrency !== data.concurrency){
+      console.log(`并发数改变，从${res.concurrency}改为${data.concurrency}`)
+      MAX_CONCURRENT_TASKS = data.concurrency
+      processTaskQueue()
+    }
+
     saveConfig(userConfigPath, { ...res, ...data })
   });
 

@@ -42,7 +42,7 @@ export const jpg2jpg = async (inputPath, outputPath, args = {}) => {
   let density = args.density || options.density
   let quality = args.quality || options.quality
 
-  let cmd = `convert "${inputPath}" -resample ${density} -quality ${quality} "${outputPath}"`
+  let cmd = `magick "${inputPath}" -resample ${density} -quality ${quality} "${outputPath}"`
 
   await cmdExec(cmd)
 }
