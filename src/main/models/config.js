@@ -5,7 +5,8 @@ import { app } from 'electron'
 //默认初始数据
 const defConfig = {
   watermark: [],
-  outputFolder: app.getPath('downloads')
+  outputFolder: app.getPath('downloads'),
+  concurrency: 1
 }
 
 export const getConfig = (filePath) => {

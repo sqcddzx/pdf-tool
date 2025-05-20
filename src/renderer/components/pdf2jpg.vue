@@ -48,8 +48,7 @@ export default {
   name: "home",
   data() {
     return {
-      files: [],
-      outputFolder: ''
+      files: []
     }
   },
   computed: {
@@ -87,26 +86,10 @@ export default {
       this.$set(this.files[index], 'isExpanded', !this.files[index].isExpanded);
     },
     openFolder(file) {
-      if (!this.outputFolder) {
-        Message.warning('请先设置输出目录');
-        return;
-      }
-      // 获取输出文件的路径
-      const outputPath = path.join(this.outputFolder, path.basename(file.path, '.pdf'));
-      ipcRenderer.send('open-folder', outputPath);
+      ipcRenderer.send('open-folder', path.basename(file.path, '.pdf'));
     }
   },
   mounted() {
-    // 获取已保存的水印文件
-    ipcRenderer.send('get-config');
-    ipcRenderer.on('get-config', (event, res) => {
-      if (res) {
-        if (res.outputFolder) {
-          this.outputFolder = res.outputFolder;
-        }
-      }
-    });
-    
     ipcRenderer.on('file-status-update', (event, { id, status, msg }) => {
       const fileIndex = this.files.findIndex(f => f.id === id);
       if (fileIndex !== -1) {
@@ -116,7 +99,6 @@ export default {
 
   },
   beforeDestroy() {
-    ipcRenderer.removeAllListeners('get-config');
     ipcRenderer.removeAllListeners('file-status-update');
   }
 };

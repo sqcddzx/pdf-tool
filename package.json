@@ -59,6 +59,11 @@
         "from": "resources/ghostscript",
         "to": "Resources/ghostscript",
         "filter": ["**/*"]
+      },
+      {
+        "from": "resources/pdftk",
+        "to": "Resources/pdftk",
+        "filter": ["**/*"]
       }
     ]
   },

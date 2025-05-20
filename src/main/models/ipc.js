@@ -1,215 +1,69 @@
-import fs from 'fs'
 import path from 'path'
 import { app, ipcMain, dialog, shell } from 'electron'
 import { getConfig, saveConfig } from './config'
-import { addWatermark } from './watermark'
-import { pdf2jpg, jpg2jpg } from './ghostscript'
-import crypto from 'crypto'
+import { addQueue, setConcurrency } from './pdf2jpg'
+import { uploadWatermark, deleteWatermark, addWatermark } from './watermark'
 
 let userDataPath = app.getPath('userData')
-let watermarkDir = `${userDataPath}/watermark/`
-let userConfigPath = `${watermarkDir}/config.json`
+let pdfToolDir = `${userDataPath}/pdftool/`
+let userConfigPath = `${pdfToolDir}/config.json`
 
-export const ipcSetup = (win) => {
-  // pdf转jpg
-  // 定义一个任务队列
-  let pdfJpgTaskQueue = [];
-  let processingCount = 0;
-  let MAX_CONCURRENT_TASKS = 1;
-
-  // 处理队列中的任务
-  async function processTaskQueue() {
-    if (processingCount >= MAX_CONCURRENT_TASKS || pdfJpgTaskQueue.length === 0) return;
-
-    processingCount++;
-    const file = pdfJpgTaskQueue.shift();
-    const config = getConfig(userConfigPath);
-
-    win.webContents.send('file-status-update', { id: file.id, status: 'processing', msg: '' });
-
-    try {
-      let inputPath = file.path;
-      let outputDir = `${config.outputFolder}/${path.basename(file.path, '.pdf')}`;
-      let outputPath = `${outputDir}/%d.jpg`;
-
-      // 检测outputDir是否存在，不存在则创建
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-      }
-
-      //pdf转jpg
-      await pdf2jpg(inputPath, outputPath, {
-        density: 600
-      }, (res) => {
-        win.webContents.send('file-status-update', { id: file.id, status: 'processing', msg: `转JPG: ${res}` });
-      });
-
-      //jpg转dpi
-      const jpgFiles = fs.readdirSync(outputDir).filter(file => path.extname(file).toLowerCase() === '.jpg');
-      for (let i = 0; i < jpgFiles.length; i++) {
-        const jpgFile = jpgFiles[i]
-        const jpgFilePath = path.join(outputDir, jpgFile);
-        await jpg2jpg(jpgFilePath, jpgFilePath, {
-          density: 254
-        });
-        win.webContents.send('file-status-update', { id: file.id, status: 'processing', msg: `转DPI: ${i + 1}/${jpgFiles.length}` });
-      }
-
-      win.webContents.send('file-status-update', { id: file.id, status: 'completed', msg: '' });
-    } catch (err) {
-      console.log(err);
-      win.webContents.send('file-status-update', { id: file.id, status: 'error', msg: err.message });
-    }
-
-    processingCount--;
-    processTaskQueue();
-  }
-
+export const ipcSetup = () => {
+ 
   ipcMain.on('pdf-jpg', (e, data) => {
-    pdfJpgTaskQueue = pdfJpgTaskQueue.concat(data.files);
-    
-    // 启动多个处理任务，直到达到最大并发数
-    while (processingCount < MAX_CONCURRENT_TASKS && pdfJpgTaskQueue.length > 0) {
-      processTaskQueue();
-    }
+    addQueue(e, data);
   });
 
   //上传水印
   ipcMain.on('upload-watermark', (e, data) => {
-    const { file } = data;
-
-    // 确保watermark目录存在
-    if (!fs.existsSync(watermarkDir)) {
-      fs.mkdirSync(watermarkDir, { recursive: true });
-    }
-
-    const fileName = file.name
-    // 生成随机 MD5 哈希值
-    const randomString = Math.random().toString(36).substring(2) + Date.now().toString(36);
-    const md5Hash = crypto.createHash('md5').update(randomString).digest('hex');
-    // 获取文件扩展名
-    const extname = path.extname(file.path);
-    // 使用随机 MD5 哈希值作为文件名
-    const newFileName = `${md5Hash}${extname}`;
-    const newPath = path.join(watermarkDir, newFileName);
-
-    // 复制文件到watermark目录
-    fs.copyFileSync(file.path, newPath);
-
-    // 更新配置文件
-    const config = getConfig(userConfigPath);
-    const info = {
-      md5: md5Hash,
-      name: fileName,
-      path: newPath
-    }
-    config.watermark.push(info)
-    saveConfig(userConfigPath, config);
-
-    // 发送成功消息回渲染进程
-    win.webContents.send('watermark-upload-success', info);
+    uploadWatermark(e, data);
   });
 
   //删除水印
   ipcMain.on('delete-watermark', (e, data) => {
-    const watermarkPath = data.path
-
-    // 获取当前配置
-    const config = getConfig(userConfigPath);
-
-    // 从配置中移除该水印
-    config.watermark = config.watermark.filter(item => item.path !== watermarkPath);
-    saveConfig(userConfigPath, config);
-
-    // 删除实际的水印文件
-    if (fs.existsSync(watermarkPath)) {
-      fs.unlinkSync(watermarkPath);
-    }
-
-    // 通知渲染进程更新界面
-    win.webContents.send('watermark-delete-success', data);
+    deleteWatermark(e, data);
   });
 
   //添加水印
   ipcMain.on('add-watermark', async (e, data) => {
-    const { files, watermark } = data;
-
-    // 获取当前配置
-    const config = getConfig(userConfigPath);
-
-    for (let i = 0; i < files.length; i++) {
-      let file = files[i]
-
-      win.webContents.send('file-status-update', { id: file.id, status: 'processing', msg: '' });
-
-      try {
-        //加水印
-        await addWatermark(file.path, watermark.path, config.outputFolder)
-
-        win.webContents.send('file-status-update', { id: file.id, status: 'completed', msg: '' });
-      } catch (err) {
-        win.webContents.send('file-status-update', { id: file.id, status: 'error', msg: err.message });
-      }
-    }
-  })
+    await addWatermark(e, data);
+  });
 
   //获取配置
   ipcMain.on('get-config', (e) => {
-    let res = getConfig(userConfigPath)
-    win.webContents.send(`get-config`, res)
+    const config = getConfig(userConfigPath)
+    e.sender.send(`get-config`, config)
   });
 
   //保存配置
   ipcMain.on('save-config', (e, data) => {
-    let res = getConfig(userConfigPath)
-    
-    if(res.concurrency !== data.concurrency){
-      console.log(`并发数改变，从${res.concurrency}改为${data.concurrency}`)
-      MAX_CONCURRENT_TASKS = data.concurrency
-      processTaskQueue()
+    if(data.concurrency){
+      setConcurrency(e, data.concurrency)
     }
 
-    saveConfig(userConfigPath, { ...res, ...data })
+    const config = getConfig(userConfigPath)
+    saveConfig(userConfigPath, { ...config, ...data })
   });
 
   //选择文件夹
   ipcMain.on('show-save-dialog', async (e, options) => {
-    const result = await dialog.showOpenDialog(win, {
+    const result = dialog.showOpenDialog(e.sender.getOwnerBrowserWindow(), {
       ...options,
       properties: ['openDirectory']
     });
-    win.webContents.send('save-dialog-result', result);
+    e.sender.send('save-dialog-result', result);
   });
 
   //打开文件夹
   ipcMain.on('open-folder', (e, filePath) => {
-    shell.showItemInFolder(filePath);
+    const config = getConfig(userConfigPath)
+    const outputPath = path.join(config.outputFolder, filePath);
+
+    shell.showItemInFolder(outputPath);
   });
 
   //关闭窗口
   ipcMain.on('win-close', (e) => {
     app.exit()
   })
-
-  win.on('close', (e) => {
-    e.preventDefault()
-    win.webContents.send('close-all', {})
-  })
-
-  win.on('closed', () => {
-    win = null
-  })
-
-  win.webContents.on('did-finish-load', () => {
-    // let listStr = process.argv.find(item => item.startsWith('--list='))
-    // if(listStr){
-    //   let label = listStr.split('=')[1]
-    //   win.webContents.send(`project-open`, label)
-
-    //   let startStr = process.argv.find(item => item.startsWith('--start'))
-    //   if(startStr){
-    //     win.webContents.send(`start-all`)
-    //   }
-    // }
-  });
 }

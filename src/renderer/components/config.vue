@@ -3,16 +3,18 @@
     <popup title="基础配置" @closePannel="onClosePannel">
       <div class="content">
         <el-form :model="form" label-width="100px">
+
           <el-form-item label="输出目录">
             <el-input v-model="form.outputFolder" readonly>
               <el-button slot="append" @click="selectFolder">选择目录</el-button>
             </el-input>
           </el-form-item>
-          <!-- 添加并发量配置项，并绑定 change 事件 -->
-          <el-form-item label="并发量">
-            <el-input-number v-model="form.concurrency"  :min="1"  :max="100"  label="并发量" @change="changeConcurrency()"
+
+          <el-form-item label="并发数量">
+            <el-input-number v-model="form.concurrency"  :min="1"  :max="10"  label="并发数量" @change="changeConcurrency()"
             ></el-input-number>
           </el-form-item>
+          
         </el-form>
       </div>
     </popup>

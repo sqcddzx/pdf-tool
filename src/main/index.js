@@ -37,6 +37,28 @@ const createWindow = () => {
 
   // 处理 IPC 事件
   ipcSetup(win)
+
+  win.on('close', (e) => {
+    e.preventDefault()
+    e.sender.send('close-all', {})
+  })
+
+  win.on('closed', () => {
+    win = null
+  })
+
+  win.webContents.on('did-finish-load', () => {
+    // let listStr = process.argv.find(item => item.startsWith('--list='))
+    // if(listStr){
+    //   let label = listStr.split('=')[1]
+    //   win.webContents.send(`project-open`, label)
+
+    //   let startStr = process.argv.find(item => item.startsWith('--start'))
+    //   if(startStr){
+    //     win.webContents.send(`start-all`)
+    //   }
+    // }
+  });
 }
 
 app.on('ready', createWindow)

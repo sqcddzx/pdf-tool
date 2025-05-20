@@ -80,8 +80,7 @@ export default {
       isDragging: false,
       files: [],
       watermarks: [],
-      activeMd5: null,
-      outputFolder: ''
+      activeMd5: null
     }
   },
   computed: {
@@ -159,13 +158,7 @@ export default {
       this.$set(this.files[index], 'isExpanded', !this.files[index].isExpanded);
     },
     openFolder(file) {
-      if (!this.outputFolder) {
-        Message.warning('请先设置输出目录');
-        return;
-      }
-      // 获取输出文件的路径
-      const outputPath = path.join(this.outputFolder, path.basename(file.path));
-      ipcRenderer.send('open-folder', outputPath);
+      ipcRenderer.send('open-folder', path.basename(file.path));
     }
   },
   mounted() {
@@ -196,9 +189,6 @@ export default {
               preview: '' // 初始化为空，等待FileReader加载
             };
           });
-        }
-        if (res.outputFolder) {
-          this.outputFolder = res.outputFolder;
         }
       }
     });
