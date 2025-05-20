@@ -37,10 +37,8 @@ export default {
   methods: {
     ...mapActions('pdf', [
       'pdfSetState' 
-    ])
-  },
-  created() {
-    ipcRenderer.on("close-all", async (e, args) => {
+    ]),
+    checkIsOver(){
       let isOver = true;
 
       if(this.$refs.watermark){
@@ -50,8 +48,13 @@ export default {
       if(this.$refs.pdf2jpg){
         isOver = this.$refs.pdf2jpg.files.every(file => file.status === 'completed') 
       }
-      
-      if (isOver) {
+
+      return isOver
+    }
+  },
+  created() {
+    ipcRenderer.on("close-all", async (e, args) => {
+      if (this.checkIsOver()) {
         ipcRenderer.send("win-close");
       } else {
         MessageBox.confirm('队列未处理完或有失败未处理，确认退出程序？', '提示', {
@@ -67,7 +70,18 @@ export default {
     // 监听显示设置面板事件
     ipcRenderer.on('set-pannel', (e, args) => {
       let { pannel } = args;
-      this.pdfSetState({ pannel: pannel })
+
+      if (this.checkIsOver()) {
+        this.pdfSetState({ pannel: pannel })
+      } else {
+        MessageBox.confirm('队列未处理完或有失败未处理，是否返回首页？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.pdfSetState({ pannel: pannel })
+        }).catch(() => {});
+      }
     });
   }
 };

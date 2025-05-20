@@ -1,8 +1,15 @@
 import path from 'path';
 import cmdExec from './cmdExec';
 
+//使用本地依赖
+const resourcesPath = process.env.NODE_ENV === 'development'
+ ? path.join(process.cwd(), '/resources') : process.resourcesPath
+
+const magickPath = path.join(resourcesPath, '/imagemagick/magick.exe')
+const gsPath = path.join(resourcesPath, '/ghostscript/gswin64c.exe')
+
 // 默认参数
-let options = {
+const options = {
   density: 300,
   quality: 100
 }
@@ -17,7 +24,7 @@ export const pdf2jpg = async (inputPath, outputPath, args = {}, progressCallback
 
   let totalPages = 0;
 
-  let cmd = `gswin64c -dBATCH -dNOPAUSE -dNOOUTERSAVE -dUseCIEColor -dCompressStreams=false -sDEVICE=jpeg -dJPEGQ=${quality} -r${density} -sOutputFile="${outputPath}" "${inputPath}"`
+  let cmd = `"${gsPath}" -dBATCH -dNOPAUSE -dNOOUTERSAVE -dUseCIEColor -dCompressStreams=false -sDEVICE=jpeg -dJPEGQ=${quality} -r${density} -sOutputFile="${outputPath}" "${inputPath}"`
 
   await cmdExec(cmd, {
     stdout: (data) => {
@@ -42,7 +49,7 @@ export const jpg2jpg = async (inputPath, outputPath, args = {}) => {
   let density = args.density || options.density
   let quality = args.quality || options.quality
 
-  let cmd = `magick "${inputPath}" -resample ${density} -quality ${quality} "${outputPath}"`
+  let cmd = `"${magickPath}" "${inputPath}" -resample ${density} -quality ${quality} "${outputPath}"`
 
   await cmdExec(cmd)
 }

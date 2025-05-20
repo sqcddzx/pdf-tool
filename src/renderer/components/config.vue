@@ -1,6 +1,6 @@
 <template>
   <div id="output-folder-settings" v-if="showPannel">
-    <popup title="输出目录设置" @closePannel="onClosePannel">
+    <popup title="基础配置" @closePannel="onClosePannel">
       <div class="content">
         <el-form :model="form" label-width="100px">
           <el-form-item label="输出目录">

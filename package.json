@@ -1,6 +1,6 @@
 {
   "name": "PDF-Tool",
-  "version": "0.0.7",
+  "version": "0.1.0",
   "author": "biuchen <biuchen@mimoprint.com>",
   "description": "PDF-Tool桌面程序",
   "license": null,
@@ -48,7 +48,19 @@
     },
     "linux": {
       "icon": "build/icons"
-    }
+    },
+    "extraFiles": [
+      {
+        "from": "resources/imagemagick",
+        "to": "Resources/imagemagick",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "resources/ghostscript",
+        "to": "Resources/ghostscript",
+        "filter": ["**/*"]
+      }
+    ]
   },
   "dependencies": {
     "element-ui": "^2.15.14",

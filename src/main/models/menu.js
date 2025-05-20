@@ -14,7 +14,7 @@ export const menuSetup = (win) => {
       label: '配置',
       submenu: [
         {
-          label: '输出目录',
+          label: '基础配置',
           click: () => {
             win.webContents.send(`show-output-folder-settings`)
           },
