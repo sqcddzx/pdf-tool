@@ -2,7 +2,7 @@ import path from 'path'
 import { app, ipcMain, dialog, shell } from 'electron'
 import { getConfig, saveConfig } from './config'
 import { addQueue, setConcurrency } from './pdf2jpg'
-import { uploadWatermark, deleteWatermark, addWatermark } from './watermark'
+import { uploadWatermark, deleteWatermark, addWatermark, saveWatermarkConfig } from './watermark'
 
 let userDataPath = app.getPath('userData')
 let pdfToolDir = `${userDataPath}/pdftool/`
@@ -22,6 +22,11 @@ export const ipcSetup = () => {
   //删除水印
   ipcMain.on('delete-watermark', (e, data) => {
     deleteWatermark(e, data);
+  });
+
+  //保存水印配置
+  ipcMain.on('save-watermark-config', (e, data) => {
+    saveWatermarkConfig(e, data);
   });
 
   //添加水印

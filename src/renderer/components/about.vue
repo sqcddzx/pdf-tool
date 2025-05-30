@@ -2,7 +2,7 @@
   <div id="about" v-if="showPannel">
     <popup title="PDF-Tool" @closePannel="onClosePannel">
       <div class="content-text">
-        <p>版本号: v0.1.0</p>
+        <p>版本号: v0.2.0</p>
       </div>
     </popup>
   </div>

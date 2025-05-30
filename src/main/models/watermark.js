@@ -35,7 +35,13 @@ export const uploadWatermark = (e, data) => {
   const info = {
     md5: md5Hash,
     name: fileName,
-    path: newPath
+    path: newPath,
+    position: {
+      base: 'center',
+      offsetX: 0,
+      offsetY: 0
+    },
+    opacity: 100
   }
   config.watermark.push(info)
   saveConfig(userConfigPath, config);
@@ -63,6 +69,22 @@ export const deleteWatermark = (e, data) => {
   e.sender.send('watermark-delete-success', data);
 }
 
+export const saveWatermarkConfig = (e, watermark) => {
+  // 获取当前配置
+  const config = getConfig(userConfigPath);
+
+  // 更新水印配置
+  const watermarkIndex = config.watermark.findIndex(item => item.md5 === watermark.md5);
+  if (watermarkIndex !== -1) {
+    config.watermark[watermarkIndex] = {
+      ...config.watermark[watermarkIndex],
+      position: watermark.position,
+      opacity: watermark.opacity
+    };
+    saveConfig(userConfigPath, config);
+  }
+}
+
 export const addWatermark = async (e, data) => {
   const { files, watermark } = data;
 
@@ -76,7 +98,10 @@ export const addWatermark = async (e, data) => {
 
     try {
       //加水印
-      await mergePdf(file.path, watermark.path, config.outputFolder)
+      await mergePdf(file.path, watermark.path, config.outputFolder, {
+        position: watermark.position,
+        opacity: watermark.opacity
+      })
 
       e.sender.send('file-status-update', { id: file.id, status: 'completed', msg: '' });
     } catch (err) {

@@ -17,11 +17,48 @@
         <div class="watermark-list">
           <div v-for="(item, index) in watermarks" :key="index" class="watermark-item"
             :class="{ active: activeMd5 === item.md5 }" @click="selectWatermark(item.md5)">
-            <!-- <div class="watermark-preview">
-              <img :src="watermark.preview" alt="水印预览">
-            </div> -->
             <div class="watermark-info">
               <div class="watermark-name">{{ item.name }}</div>
+              <div class="watermark-config" v-if="activeMd5 === item.md5">
+                <div class="config-item">
+                  <label>位置：</label>
+                  <div class="position-grid">
+                    <div class="grid-row">
+                      <div class="grid-cell" :class="{ active: item.position.base === 'top-left' }" @click="item.position.base = 'top-left'"></div>
+                      <div class="grid-cell" :class="{ active: item.position.base === 'top-center' }" @click="item.position.base = 'top-center'"></div>
+                      <div class="grid-cell" :class="{ active: item.position.base === 'top-right' }" @click="item.position.base = 'top-right'"></div>
+                    </div>
+                    <div class="grid-row">
+                      <div class="grid-cell" :class="{ active: item.position.base === 'middle-left' }" @click="item.position.base = 'middle-left'"></div>
+                      <div class="grid-cell" :class="{ active: item.position.base === 'center' }" @click="item.position.base = 'center'"></div>
+                      <div class="grid-cell" :class="{ active: item.position.base === 'middle-right' }" @click="item.position.base = 'middle-right'"></div>
+                    </div>
+                    <div class="grid-row">
+                      <div class="grid-cell" :class="{ active: item.position.base === 'bottom-left' }" @click="item.position.base = 'bottom-left'"></div>
+                      <div class="grid-cell" :class="{ active: item.position.base === 'bottom-center' }" @click="item.position.base = 'bottom-center'"></div>
+                      <div class="grid-cell" :class="{ active: item.position.base === 'bottom-right' }" @click="item.position.base = 'bottom-right'"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="config-item">
+                  <label>X偏移(mm)：</label>
+                  <input type="number" v-model.number="item.position.offsetX" step="1">
+                </div>
+                <div class="config-item">
+                  <label>Y偏移(mm)：</label>
+                  <input type="number" v-model.number="item.position.offsetY" step="1">
+                </div>
+                <div class="config-item">
+                  <label>透明度：</label>
+                  <input type="range" v-model.number="item.opacity" min="0" max="100" step="1">
+                  <span>{{ item.opacity }}%</span>
+                </div>
+                <div class="config-actions">
+                  <button class="save-config-btn" @click.stop="saveWatermarkConfig(item)">
+                    保存配置
+                  </button>
+                </div>
+              </div>
               <button class="delete-btn" @click.stop="deleteWatermark(item.md5)">
                 删除
               </button>
@@ -159,6 +196,10 @@ export default {
     },
     openFolder(file) {
       ipcRenderer.send('open-folder', path.basename(file.path));
+    },
+    saveWatermarkConfig(watermark) {
+      ipcRenderer.send('save-watermark-config', watermark);
+      Message.success('配置已保存');
     }
   },
   mounted() {
@@ -186,6 +227,8 @@ export default {
               
             return {
               ...item,
+              position: item.position || { base: 'center', offsetX: 0, offsetY: 0 },
+              opacity: item.opacity || 100,
               preview: '' // 初始化为空，等待FileReader加载
             };
           });
@@ -201,6 +244,12 @@ export default {
           md5: data.md5,
           name: data.name,
           path: data.path,
+          position: data.position || {
+            base: 'center',
+            offsetX: 0,
+            offsetY: 0
+          },
+          opacity: data.opacity || 100,
           preview: e.target.result
         });
       };
@@ -352,10 +401,120 @@ export default {
           display: flex;
           flex-direction: column;
           justify-content: space-between;
+          width: 100%;
 
           .watermark-name {
             font-size: 14px;
             color: #303133;
+            margin-bottom: 10px;
+          }
+
+          .watermark-config {
+            margin-bottom: 10px;
+            padding: 10px;
+            // background: #f5f7fa;
+            border-radius: 4px;
+
+            .config-item {
+              display: flex;
+              align-items: center;
+              margin-bottom: 8px;
+
+              &:last-child {
+                margin-bottom: 0;
+              }
+
+              label {
+                width: 80px;
+                font-size: 12px;
+                color: #606266;
+              }
+
+              .position-grid {
+                // flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                // background: #f5f7fa;
+                padding: 4px;
+                border-radius: 4px;
+                width: 50px;
+                height: 50px;
+
+                .grid-row {
+                  display: flex;
+                  gap: 4px;
+                  flex: 1;
+
+                  .grid-cell {
+                    flex: 1;
+                    background: white;
+                    border-radius: 2px;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    border: 1px solid #dcdfe6;
+
+                    &:hover {
+                      background: #ecf5ff;
+                      border-color: #409EFF;
+                    }
+
+                    &.active {
+                      background: #409EFF;
+                      border-color: #409EFF;
+                    }
+                  }
+                }
+              }
+
+              select, input[type="number"] {
+                flex: 1;
+                padding: 4px 8px;
+                border: 1px solid #dcdfe6;
+                border-radius: 4px;
+                font-size: 12px;
+                color: #606266;
+                background: #fff;
+
+                &:focus {
+                  border-color: #409EFF;
+                  outline: none;
+                }
+              }
+
+              input[type="range"] {
+                flex: 1;
+                margin: 0 8px;
+              }
+
+              span {
+                width: 40px;
+                font-size: 12px;
+                color: #606266;
+                text-align: right;
+              }
+            }
+
+            .config-actions {
+              display: flex;
+              justify-content: flex-start;
+              margin-top: 10px;
+
+              .save-config-btn {
+                background-color: #409EFF;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+
+                &:hover {
+                  background-color: #66b1ff;
+                }
+              }
+            }
           }
 
           .delete-btn {

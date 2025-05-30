@@ -1,6 +1,6 @@
 {
   "name": "PDF-Tool",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "biuchen <biuchen@mimoprint.com>",
   "description": "PDF-Tool桌面程序",
   "license": null,
@@ -53,23 +53,30 @@
       {
         "from": "resources/imagemagick",
         "to": "Resources/imagemagick",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "resources/ghostscript",
         "to": "Resources/ghostscript",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "resources/pdftk",
         "to": "Resources/pdftk",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ]
   },
   "dependencies": {
     "element-ui": "^2.15.14",
     "multispinner": "^0.2.1",
+    "pdf-lib": "^1.17.1",
     "vue": "^2.5.16",
     "vue-electron": "^1.0.6",
     "vue-router": "^3.0.1",
